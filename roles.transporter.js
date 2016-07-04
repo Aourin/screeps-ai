@@ -9,7 +9,16 @@
 
 module.exports = {
     run: function () {
+      const container = this.pos.findClosestByRange(STRUCTURE_CONTAINER);
       const home = Game.getObjectById(this.memory.spawnId);
+
+      if (!this.memory.driverId) {
+        _.forIn(Game.creeps, (value, key) => {
+          if (!this.memory.driverId && value.memory.role === 'miner') {
+            this.memory.driverId = value.id;
+          }
+        })
+      }
       const miner = Game.getObjectById(this.memory.driverId);
 
       //  Energy Harvesting for each spawn point
@@ -18,8 +27,11 @@ module.exports = {
           this.moveTo(miner);
         } 
       } else if (_.sum(this.carry) === parseInt(this.carryCapacity)) {
-      
-        if (this.transfer(home, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        let storage = container;
+        if (this.transfer(storage, RESOURCE_ENERGY) === ERR_INVALID_TARGET) {
+          storage = home;
+        }
+        if (this.transfer(storage, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           this.moveTo(home);
         }
       }
