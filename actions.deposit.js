@@ -6,16 +6,21 @@
  * var mod = require('roles.miner');
  * mod.thing == 'a thing'; // true
  */
-
+const storageHasEnergy = require('filters.storageHasEnergy');
 module.exports = function deposit () {
-    const container = this.pos.findClosestByRange(STRUCTURE_CONTAINER);
-    const home = Game.getObjectById(this.memory.spawnId);
+    let storage = this.pos.findClosestByPath(FIND_MY_STRUCTURES, { filter: storageHasEnergy });
 
-    let storage = container;
-    if (this.transfer(storage, RESOURCE_ENERGY) === ERR_INVALID_TARGET) {
-      storage = home;
+    console.log('storage', this.memory.spawnId);
+
+    if (!storage && typeof this.memory.spawnId === 'string') {
+      storage = Game.getObjectById(this.memory.spawnId);;
+    } else {
+      const newSpawn = this.room.find(FIND_STRUCTURES, {filter: {structureType: STRUCTURE_SPAWN}})[0];
+      this.memory.spawnId = newSpawn.id;
     }
+
+
     if (this.transfer(storage, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(home);
+      this.moveTo(storage);
     }
 };

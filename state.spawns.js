@@ -1,8 +1,12 @@
 
 function getSpawnInstanceState (spawnInstance) {
   const state = {
-    list: [],
-    hash: {}
+    creeps: {
+      list: [],
+      roles: {}
+    },
+    name: spawnInstance.name,
+    id: spawnInstance.id
   };
   //  Adds creepMeta per spawn
   _.forIn(Game.creeps, (creep, key) => {
@@ -15,12 +19,12 @@ function getSpawnInstanceState (spawnInstance) {
     };
 
     if (spawnId === spawnInstance.id) {
-      if (state.hash[role]) {
-        state.hash[role].push(creepMeta);
+      if (state.creeps.roles[role]) {
+        state.creeps.roles[role].push(creepMeta);
       } else {
-        state.hash[role] = [creepMeta];
+        state.creeps.roles[role] = [creepMeta];
       }
-      state.list.push(creepMeta);
+      state.creeps.list.push(creepMeta);
     }    
   });
   return state;
@@ -35,7 +39,7 @@ function globalSpawnState () {
   _.forIn(Game.spawns, (spawnInstance, name) => {
     const spawnMeta = getSpawnInstanceState(spawnInstance);
     state.list.push(spawnMeta);
-    state.hash[name] = spawnMeta;
+    state.hash[spawnInstance.id] = spawnMeta;
   });
   return state;
   

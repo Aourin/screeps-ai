@@ -1,9 +1,11 @@
+//Tier 1
 const DEFAULT_CONFIG = {
-  miner: { min: 1, max: 2},
-  transporter: { min: 1, max: 3},
-  builder: { min: 0, max: 2}
+  miner: { min: 1, max: 6},
+  transporter: { min: 1, max: 8},
+  builder: { min: 1, max: 6},
+  upgrader: { min: 1, max: 5},
 };
-const CREEP_TYPES = {
+const TIER_1_TYPES = {
   miner: {
     body: [WORK, MOVE, CARRY], 
     memoryConfig: { role: 'miner', type: 'focal'}
@@ -15,20 +17,45 @@ const CREEP_TYPES = {
   builder: {
     body: [MOVE, WORK, CARRY],
     memoryConfig: { role: 'builder', type: 'worker'}
+  },
+  upgrader: {
+    body: [MOVE, CARRY, CARRY, WORK],
+    memoryConfig: { role: 'upgrader', type: 'worker'}
   }
 };
 
-
+//  Tier 2 Config
+const TIER_2_TYPES = {
+  miner: {
+    body: [WORK, MOVE, CARRY, WORK, CARRY], 
+    memoryConfig: { role: 'miner', type: 'focal'}
+  },
+  transporter: {
+    body: [MOVE, MOVE, MOVE, CARRY, CARRY], 
+    memoryConfig: { role: 'transporter', type: 'worker' }
+  },
+  builder: {
+    body: [MOVE, WORK, WORK, CARRY, CARRY],
+    memoryConfig: { role: 'builder', type: 'worker'}
+  },
+  upgrader: {
+    body: [MOVE, CARRY, CARRY, WORK, MOVE, WORK],
+    memoryConfig: { role: 'upgrader', type: 'worker'}
+  }
+}
+const TIER_TWO_COUNT_START = 7;
 function createCreep (spawn) {
-  return function (role, name, memoryConfig) {
-    const attrs = Object.assign({}, CREEP_TYPES[role]);
-
+  return function (role, name, memoryConfig, tier) {
+    const CREEP_TIER = tier ? tier : TIER_1_TYPES;
+    const attrs = Object.assign({}, CREEP_TIER[role]);
     if (memoryConfig) {
       _.forIn(memoryConfig, (value, key) => {
         attrs.memoryConfig[key] = value;
       });
     }
     attrs.memoryConfig.spawnId = spawn.id;
+
+    console.log('CREEPTIERs', attrs.memoryConfig.spawnId)
     const resp = spawn.createCreep(attrs.body, name, attrs.memoryConfig);
     return resp;
   }
@@ -39,29 +66,21 @@ function createCreep (spawn) {
 */
 function manageWorkers (spawn, config) {
   const options = Object.assign({}, DEFAULT_CONFIG, config);
-  const creepList = [];
-  const creeps = {
+  const creepList = Memory.state.spawns.hash[spawn.id].creeps.list;
+  let creepTier = TIER_1_TYPES;
+  const creeps = Object.assign({
     miner: [],
-    builder: [],
-    transporter: []
-  };
+    transporter: [],
+    upgrader: [],
+    builder: []
+  }, Memory.state.spawns.hash[spawn.id].creeps.roles);
   const spawnCreep = createCreep(spawn);
-  const ROLE_ORDER = ['miner','transporter', 'builder'];
-  //  Group creeps by role
-  _.forIn(Game.creeps, (value, key) => {
-      const role = value.memory.role;
-      const spawnId = value.memory.spawnId;
-      if (spawnId === spawn.id) {
-        if (creeps[role]) {
-          creeps[role].push(value);
-        } else {
-          creeps[role] = [value];
-        }
-        creepList.push(value);
-      }    
-  });
-
+  let ROLE_ORDER = ['miner','transporter','upgrader','builder'];
+  if (creepList.length > TIER_TWO_COUNT_START) {
+    ROLE_ORDER = ['transporter', 'miner', 'builder', 'upgrader'];
+    creepTier = TIER_2_TYPES;
    //  Build Minimums
+  }
   const minMet = _.reduce(ROLE_ORDER, (cont, role) => {
     //  Continue if Previous is already built
     if (cont) {
@@ -72,17 +91,11 @@ function manageWorkers (spawn, config) {
       if (collection.length < creepConfig.min) {
         const memoryConfig = {};
         const creepName = Array.isArray(collection) 
-          ? (nameBase + '-' + collection.length) 
+          ? (nameBase + '-' + _.random(0,10000)) 
           : nameBase + '-0';
-
-        //  Handle Transporter type
-        // if (role === 'transporter' && creeps.miner.length) {
-        //   const randomName = spawn.name + '-' + 'miner' + '-' + _.random(0, creeps.miner.length - 1);
-        //   const randomMiner = Game.creeps[randomName];
-        //   memoryConfig.targetId = randomMiner.id;
-        // }
         //  Check for the spawn response and adjust
-        const spawned = spawnCreep(role, creepName, memoryConfig);
+        const spawned = spawnCreep(role, creepName, memoryConfig, creepTier);
+       
         return spawned > -1 ? ((collection.length + 1) >= creepConfig.min) : false;
       } else {
         return true;
@@ -94,28 +107,20 @@ function manageWorkers (spawn, config) {
 
   if (minMet) {
      _.reduce(ROLE_ORDER, (cont, role) => {
-      console.log('cont', cont);
       //  Continue if Previous is already built
       if (cont) {
         const creepConfig = options[role];
         const nameBase = spawn.name + '-' + role;
         const collection = creeps[role];
-        console.log('check for', role);
         //  Get Collection length and check against min
         if (collection.length < creepConfig.max) {
           const memoryConfig = {};
           const creepName = Array.isArray(collection) 
-            ? (nameBase + '-' + collection.length) 
+            ? (nameBase + '-' + _.random(0, 1000)) 
             : nameBase + '-0';
 
-          //  Handle Transporter type
-          if (role === 'transporter' && creeps.miner.length) {
-            const randomName = spawn.name + '-' + 'miner' + '-' + _.random(0, creeps.miner.length - 1);
-            const randomMiner = Game.creeps[randomName];
-            memoryConfig.targetId = randomMiner.id;
-          }
           //  Check for the spawn response and adjust
-          const spawned = spawnCreep(role, creepName, memoryConfig);
+          const spawned = spawnCreep(role, creepName, memoryConfig, creepTier);
           return spawned > -1 ? ((collection.length + 1) >= creepConfig.min) : false;
         } else {
           return true;
@@ -125,7 +130,6 @@ function manageWorkers (spawn, config) {
       }
     }, true);
   }
-
 }
 
 module.exports = {
