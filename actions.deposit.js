@@ -6,19 +6,22 @@
  * var mod = require('roles.miner');
  * mod.thing == 'a thing'; // true
  */
-const storageHasEnergy = require('filters.storageHasEnergy');
-module.exports = function deposit () {
-    let storage = this.pos.findClosestByPath(FIND_MY_STRUCTURES, { filter: storageHasEnergy });
-
-    console.log('storage', this.memory.spawnId);
-
-    if (!storage && typeof this.memory.spawnId === 'string') {
-      storage = Game.getObjectById(this.memory.spawnId);;
+const storageHasSpaceFilter = require('filters.storageHasSpace');
+module.exports = function deposit (priority) {
+    let storage;
+    if ((this.memory.priority === 'closest' || priority === 'closest') && this.room.hasReserves(0.2)) {
+        storage = this.pos.findClosestByPath(FIND_STRUCTURES, { filter : storageHasSpaceFilter})
+    } else  if (!this.room.hasReserves(1)) {
+        storage = this.pos.findClosestByPath(FIND_STRUCTURES, { filter: (item) => {
+          return (item.structureType === STRUCTURE_EXTENSION || item.structureType === STRUCTURE_SPAWN) && item.energy < item.energyCapacity;
+        }});
     } else {
-      const newSpawn = this.room.find(FIND_STRUCTURES, {filter: {structureType: STRUCTURE_SPAWN}})[0];
-      this.memory.spawnId = newSpawn.id;
+        storage = this.pos.findClosestByPath(FIND_STRUCTURES, {
+            filter: (item) => {
+                return (item.structureType === STRUCTURE_CONTAINER || item.structureType === STRUCTURE_STORAGE) && item.availableSpace > 0;
+            }
+        });
     }
-
 
     if (this.transfer(storage, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       this.moveTo(storage);
