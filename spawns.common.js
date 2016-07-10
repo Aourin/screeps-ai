@@ -1,37 +1,47 @@
 //Tier 1
 const DEFAULT_CONFIG = {
-  miner: { min: 1, max: 6},
-  transporter: { min: 1, max: 8},
-  builder: { min: 1, max: 6},
-  upgrader: { min: 1, max: 5},
+  miner: { min: 6, max: 15},
+  transporter: { min: 6, max: 6},
+  knight: { min: 3, max: 6},
+  builder: { min: 2, max: 6},
+  upgrader: { min: 1, max: 6},
+  fixer: {min: 2, max: 3}
 };
 const TIER_1_TYPES = {
   miner: {
-    body: [WORK, MOVE, CARRY], 
-    memoryConfig: { role: 'miner', type: 'focal'}
+    body: [WORK, MOVE, CARRY, MOVE, CARRY], 
+    memoryConfig: { role: 'miner', type: 'worker'}
   },
   transporter: {
-    body: [MOVE, CARRY], 
+    body: [MOVE, CARRY, WORK, MOVE, MOVE, MOVE], 
     memoryConfig: { role: 'transporter', type: 'worker' }
   },
   builder: {
-    body: [MOVE, WORK, CARRY],
+    body: [MOVE, WORK, CARRY, MOVE],
     memoryConfig: { role: 'builder', type: 'worker'}
   },
   upgrader: {
-    body: [MOVE, CARRY, CARRY, WORK],
+    body: [MOVE, CARRY, CARRY, WORK, MOVE],
     memoryConfig: { role: 'upgrader', type: 'worker'}
-  }
+  },
+   fixer: {
+    body: [MOVE, CARRY, CARRY, WORK, WORK],
+    memoryConfig: { role: 'fixer', type: 'worker'}
+  },
+   knight: {
+    body: [MOVE, MOVE, TOUGH, TOUGH, ATTACK, ATTACK],
+    memoryConfig: { role: 'knight', type: 'worker'},
+   }
 };
 
 //  Tier 2 Config
 const TIER_2_TYPES = {
   miner: {
-    body: [WORK, MOVE, CARRY, WORK, CARRY], 
+    body: [WORK, MOVE, CARRY, WORK, CARRY, MOVE], 
     memoryConfig: { role: 'miner', type: 'focal'}
   },
   transporter: {
-    body: [MOVE, MOVE, MOVE, CARRY, CARRY], 
+    body: [MOVE, MOVE, WORK, CARRY, CARRY], 
     memoryConfig: { role: 'transporter', type: 'worker' }
   },
   builder: {
@@ -41,6 +51,11 @@ const TIER_2_TYPES = {
   upgrader: {
     body: [MOVE, CARRY, CARRY, WORK, MOVE, WORK],
     memoryConfig: { role: 'upgrader', type: 'worker'}
+  },
+  fixer: {
+      
+    body: [MOVE, CARRY, CARRY, WORK, MOVE, WORK],
+    memoryConfig: { role: 'fixer', type: 'worker'}
   }
 }
 const TIER_TWO_COUNT_START = 7;
@@ -55,7 +70,6 @@ function createCreep (spawn) {
     }
     attrs.memoryConfig.spawnId = spawn.id;
 
-    console.log('CREEPTIERs', attrs.memoryConfig.spawnId)
     const resp = spawn.createCreep(attrs.body, name, attrs.memoryConfig);
     return resp;
   }
@@ -72,12 +86,15 @@ function manageWorkers (spawn, config) {
     miner: [],
     transporter: [],
     upgrader: [],
-    builder: []
+    builder: [],
+    knight: [],
+    fixer: []
   }, Memory.state.spawns.hash[spawn.id].creeps.roles);
   const spawnCreep = createCreep(spawn);
-  let ROLE_ORDER = ['miner','transporter','upgrader','builder'];
-  if (creepList.length > TIER_TWO_COUNT_START) {
-    ROLE_ORDER = ['transporter', 'miner', 'builder', 'upgrader'];
+  if (spawn.room.hasReserves(0.8)) {
+  let ROLE_ORDER = ['miner','builder', 'upgrader', 'knight', 'fixer', 'transporter'];
+  if (creepList.length > TIER_TWO_COUNT_START && spawn.room.energyCapacity > 1000) {
+    ROLE_ORDER = ['miner', 'builder', 'upgrader', 'knight', 'transporter'];
     creepTier = TIER_2_TYPES;
    //  Build Minimums
   }
@@ -130,7 +147,9 @@ function manageWorkers (spawn, config) {
       }
     }, true);
   }
+  }
 }
+
 
 module.exports = {
   createCreep: createCreep,
