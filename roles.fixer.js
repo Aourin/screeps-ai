@@ -24,7 +24,7 @@ module.exports = {
         }
         switch (this.memory.phase) {
             case 'repair': repair.call(this); break;
-            case 'repairClose': repairClose.call(this); break;
+            case 'repairClose': repairClose.call(this, this.memory.focus); break;
             case 'repairStorage': repairStorage.call(this); break;
             case 'gatherClose': gatherClose.call(this); break;
             case 'build' : build.call(this); break;

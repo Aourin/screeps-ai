@@ -19,7 +19,7 @@ module.exports = {
     run: function () {
       const home = Game.getObjectById(this.memory.spawnId);
       let site;
-      if (this.carry.energy === this.carryCapacity && this.memory.phase !== 'repair') {
+      if (this.carry.energy === this.carryCapacity && this.memory.phase !== 'repair' || (this.memory.phase === 'repair' && !this.memory.repairId)) {
           this.memory.phase = 'build';
       } else if (this.carry.energy === 0 && this.room.hasReserves(0.5)) {
           this.memory.phase = 'gather';
@@ -32,14 +32,14 @@ module.exports = {
       switch (this.memory.phase) {
           case 'mine': mine.call(this);
             break;
-          case 'repair': repair.call(this);
-            break;
           case 'build': const resp = build.call(this);
             if (typeof resp === 'undefined') {
                 this.memory.phase = 'repair';
             } else {
               break;
             }
+          case 'repair': repair.call(this);
+            break;
           case 'gather': gather.call(this);
             break;
           case 'gatherStorage': gatherStorage.call(this);

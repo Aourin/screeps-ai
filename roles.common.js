@@ -46,12 +46,21 @@ module.exports = function () {
         }
         
         switch (this.memory.phase) {
-            case 'renew': 
-                if (this.ticksToLive > spawn.renewTopoff) {
-                    delete this.memory.phase;
-                } else if (spawn && spawn.renewCreep(this) === ERR_NOT_IN_RANGE) {
+            case 'renew': ;
+                if (this.ticksToLive >= spawn.renewTopoff) {
+                    delete this.clearPhase();
+                } else if (spawn) {
+                    const renewMsg = spawn.renewCreep(this);
+                    if (renewMsg === ERR_NOT_IN_RANGE) {
+                        this.moveTo(spawn)
+                    } else if (renewMsg === ERR_FULL) {
+                        delete this.clearPhase();
+                    }
+                    console.log(renewMsg);
+                    console.log('renew it', spawn.renewCreep(this))
                     this.moveTo(spawn);
                 }
+                
                 break;
             case 'deposit': 
                 deposit.call(this);
