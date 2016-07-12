@@ -5,7 +5,7 @@ module.exports = function () {
         container = Game.getObjectById(this.memory.repairId);
     } else {
         const containers = this.room.find(FIND_STRUCTURES, {
-            filter: (s) => s.structureType === STRUCTURE_CONTAINER && s.hits < 0.4 * s.hitsMax
+            filter: (s) => ((s.isType(STRUCTURE_CONTAINER) || s.isType(STRUCTURE_STORAGE)) && s.hasHealth(0.4))
          });
          
         containers.sort((a, b) => a.hits - b.hits);

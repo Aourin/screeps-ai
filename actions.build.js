@@ -12,6 +12,8 @@ module.exports = function build () {
       let target;
       if (this.memory.buildTargetId) {
           target = Game.getObjectById(this.memory.buildTargetId);
+      } else if (Array.isArray(this.memory.buildQueue) && this.memory.buildQueue.length) {
+            this.memory.buildTargetId = this.memory.buildQueue.shift();
       } else if (this.memory.priority) {
           const buildTargets = this.find(priority);
           if (buildTargets.length) {
@@ -26,6 +28,10 @@ module.exports = function build () {
       
       if (!target || this.build(target) === ERR_INVALID_TARGET) {
         delete this.memory.buildTargetId;
+        if (Array.isArray(this.memory.buildQueue) && this.memory.buildQueue.length) {
+            this.memory.buildTargetId = this.memory.buildQueue.shift();
+            return 0;
+        }
       } else {
          const resp = this.build(target);
          

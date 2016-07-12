@@ -10,7 +10,6 @@ module.exports = function gatherClose () {
     });
     
     if (storage) {
-        console.log('staroge', storage.id);
         const resp = storage.transfer(this, RESOURCE_ENERGY);
         if (resp === ERR_NOT_IN_RANGE) {
             this.moveTo(storage);
